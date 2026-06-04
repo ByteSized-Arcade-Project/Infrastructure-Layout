@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ByteSized Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:      #080c10;
+    --bg2:     #0d1117;
+    --bg3:     #131b24;
+    --border:  rgba(255,255,255,0.07);
+    --accent:  #00e5ff;
+    --accent2: rgba(0,229,255,0.12);
+    --text:    #dde6ed;
+    --muted:   rgba(221,230,237,0.38);
+    --gold:    #ffd166;
+    --silver:  #b8c0cc;
+    --bronze:  #c9874f;
+    --danger:  #ff4d6d;
+    --cell:    21px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Subtle scanline texture */
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+  }
+
+  /* ── HEADER ── */
+  header {
+    width: 100%;
+    max-width: 860px;
+    padding: 36px 28px 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 15px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    line-height: 1;
+    /* Subtle glow — only on the logo, not everywhere */
+    filter: drop-shadow(0 0 12px rgba(0,229,255,0.4));
+  }
+
+  .tagline {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+  }
+
+  /* ── MAIN ── */
+  main {
+    width: 100%;
+    max-width: 860px;
+    padding: 0 28px;
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+
+  /* ── GAME COLUMN ── */
+  .game-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Score strip */
+  .score-strip {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg2);
+  }
+  .score-cell {
+    flex: 1;
+    padding: 11px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .score-cell + .score-cell {
+    border-left: 1px solid var(--border);
+  }
+  .sc-label {
+    font-size: 8px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .sc-val {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    color: var(--text);
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+  .sc-val.hi { color: var(--accent); }
+
+  /* Canvas wrapper */
+  .canvas-wrap {
+    position: relative;
+    line-height: 0;
+  }
+
+  canvas {
+    display: block;
+    width: 420px;
+    height: 420px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg2);
+  }
+
+  /* Overlay states (start, pause, game-over) */
+  .overlay-state {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(8,12,16,0.88);
+    border-radius: 6px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    backdrop-filter: blur(2px);
+  }
+  .overlay-state.active { display: flex; }
+
+  .ov-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .ov-title.danger { color: var(--danger); }
+  .ov-sub {
+    font-size: 11px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.8;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 12px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: opacity 0.15s, transform 0.1s;
+    line-height: 1;
+  }
+  .btn:active { transform: scale(0.96); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #080c10;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
+
+  /* Bottom row: speed + hint */
+  .game-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .speed-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .speed-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+  .spd {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    padding: 5px 9px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+    line-height: 1;
+  }
+  .spd.on {
+    background: var(--accent2);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .hint {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ── LEADERBOARD COLUMN ── */
+  .lb-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg2);
+  }
+
+  .lb-head {
+    padding: 14px 18px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .lb-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--accent);
+    letter-spacing: 1.5px;
+  }
+  .lb-live {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 8px;
+    color: var(--muted);
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
+
+  .lb-row {
+    display: flex;
+    align-items: center;
+    padding: 13px 18px;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-row:hover { background: var(--bg3); }
+  .lb-row.new-entry { animation: flashin 0.6s ease; }
+  @keyframes flashin {
+    from { background: rgba(0,229,255,0.08); }
+    to   { background: transparent; }
+  }
+
+  .lb-rank {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .r1 { color: var(--gold); }
+  .r2 { color: var(--silver); }
+  .r3 { color: var(--bronze); }
+  .rN { color: var(--muted); }
+
+  .lb-name {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .lb-score {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--text);
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+  .lb-row:nth-child(1) .lb-score { color: var(--gold); }
+
+  .lb-new-badge {
+    font-size: 7px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(0,229,255,0.12);
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  /* Empty state */
+  .lb-empty {
+    padding: 36px 18px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 2;
+  }
+
+  /* ── SUBMIT MODAL ── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--bg2);
+    border: 1px solid rgba(0,229,255,0.3);
+    border-radius: 10px;
+    padding: 36px 32px;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    box-shadow: 0 0 60px rgba(0,229,255,0.08);
+  }
+
+  .modal-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .modal-sub {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 24px;
+    letter-spacing: 0.5px;
+  }
+  .modal-score-big {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 36px;
+    color: var(--text);
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+  }
+
+  .modal input[type="text"] {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    padding: 11px 14px;
+    border-radius: 6px;
+    outline: none;
+    text-align: center;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+    letter-spacing: 1px;
+  }
+  .modal input[type="text"]::placeholder { color: var(--muted); }
+  .modal input[type="text"]:focus { border-color: rgba(0,229,255,0.5); }
+
+  .modal-feedback {
+    font-size: 10px;
+    min-height: 18px;
+    margin-top: 10px;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    text-align: center;
+  }
+  .modal-feedback.err { color: var(--danger); }
+
+  /* ── FOOTER ── */
+  footer {
+    width: 100%;
+    max-width: 860px;
+    padding: 28px 28px;
+    margin-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .footer-text {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">BYTESIZED ARCADE</div>
+  <div class="tagline">High Score Challenge</div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- LEFT: GAME -->
+  <div class="game-col">
+
+    <!-- Score strip -->
+    <div class="score-strip">
+      <div class="score-cell">
+        <span class="sc-label">Score</span>
+        <span class="sc-val" id="disp-score">000</span>
+      </div>
+      <div class="score-cell">
+        <span class="sc-label">Best</span>
+        <span class="sc-val hi" id="disp-best">000</span>
+      </div>
+      <div class="score-cell">
+        <span class="sc-label">Level</span>
+        <span class="sc-val" id="disp-level">1</span>
+      </div>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-wrap">
+      <canvas id="game-canvas" width="420" height="420"></canvas>
+
+      <!-- Start screen -->
+      <div class="overlay-state active" id="ov-start">
+        <div class="ov-title">SNAKE</div>
+        <div class="ov-sub">Use arrow keys or WASD<br>to move. Don't hit the walls.</div>
+        <button class="btn btn-primary" onclick="startGame()">PLAY</button>
+      </div>
+
+      <!-- Pause screen -->
+      <div class="overlay-state" id="ov-pause">
+        <div class="ov-title">PAUSED</div>
+        <button class="btn btn-ghost" onclick="togglePause()">RESUME</button>
+      </div>
+
+      <!-- Game over screen -->
+      <div class="overlay-state" id="ov-gameover">
+        <div class="ov-title danger">GAME OVER</div>
+        <div class="ov-sub">Score: <span id="go-score-val" style="color:var(--text)">0</span></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="startGame()">RETRY</button>
+          <button class="btn btn-ghost" onclick="openModal()">SUBMIT</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Speed + hint -->
+    <div class="game-footer">
+      <div class="speed-group">
+        <span class="speed-label">SPEED</span>
+        <button class="spd on"  onclick="setSpeed(0,this)">EASY</button>
+        <button class="spd"     onclick="setSpeed(1,this)">MED</button>
+        <button class="spd"     onclick="setSpeed(2,this)">HARD</button>
+        <button class="spd"     onclick="setSpeed(3,this)">MAX</button>
+      </div>
+      <span class="hint">P — pause</span>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: LEADERBOARD -->
+  <div class="lb-col" id="lb-col">
+    <div class="lb-head">
+      <span class="lb-title">LEADERBOARD</span>
+      <span class="lb-live"><span class="live-dot"></span>LIVE</span>
+    </div>
+    <div id="lb-body">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-text">ByteSized Arcade &nbsp;·&nbsp; Play. Score. Repeat.</span>
+</footer>
+
+<!-- SUBMIT MODAL -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <div class="modal-title">SUBMIT SCORE</div>
+    <div class="modal-sub">Enter your name for the leaderboard</div>
+    <div class="modal-score-big" id="modal-score-big">000</div>
+    <input type="text" id="player-name" maxlength="12" placeholder="Your name" autocomplete="off" spellcheck="false"/>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="submitScore()">SUBMIT</button>
+      <button class="btn btn-ghost"   onclick="closeModal()">CANCEL</button>
+    </div>
+    <div class="modal-feedback" id="modal-fb"></div>
+  </div>
+</div>
+
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────
+const COLS   = 20;
+const ROWS   = 20;
+const CELL   = 21; // px
+const SPEEDS = [110, 70, 45, 25]; // ms/tick
+
+// API — replace with your ALB DNS name after deploy
+const API_BASE   = window.location.origin;
+const SCORE_PATH = '/api/score';
+const LB_PATH    = '/api/leaderboard';
+
+// ── CANVAS ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('game-canvas');
+const ctx    = canvas.getContext('2d');
+
+// ── STATE ───────────────────────────────────────────────────────────────
+let snake, dir, nextDir, food, score, best, level;
+let running = false, paused = false, speedIdx = 0, loopHandle;
+best = Number(localStorage.getItem('ba_best') || 0);
+updateHUD();
+
+function initState() {
+  snake   = [{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+  dir     = {x:1, y:0};
+  nextDir = {x:1, y:0};
+  food    = placeFood();
+  score   = 0;
+  level   = 1;
+  paused  = false;
+  running = true;
+}
+
+function placeFood() {
+  let p;
+  do { p = {x: Math.floor(Math.random()*COLS), y: Math.floor(Math.random()*ROWS)}; }
+  while (snake.some(s => s.x===p.x && s.y===p.y));
+  return p;
+}
+
+// ── DRAW ────────────────────────────────────────────────────────────────
+const C_BG      = '#0d1117';
+const C_GRID    = '#111820';
+const C_FOOD    = '#ff4d6d';
+const C_SNAKE   = '#00e5ff';
+const C_HEAD    = '#ffffff';
+
+function draw() {
+  // Background
+  ctx.fillStyle = C_BG;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid
+  ctx.strokeStyle = C_GRID;
+  ctx.lineWidth   = 0.5;
+  for (let c=0; c<=COLS; c++) {
+    ctx.beginPath(); ctx.moveTo(c*CELL, 0); ctx.lineTo(c*CELL, canvas.height); ctx.stroke();
+  }
+  for (let r=0; r<=ROWS; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r*CELL); ctx.lineTo(canvas.width, r*CELL); ctx.stroke();
+  }
+
+  if (!running && !paused) return;
+
+  // Food — pulsing circle
+  const pulse = Math.sin(Date.now() / 260) * 1.4;
+  ctx.shadowBlur  = 10;
+  ctx.shadowColor = C_FOOD;
+  ctx.fillStyle   = C_FOOD;
+  ctx.beginPath();
+  ctx.arc(
+    food.x*CELL + CELL/2,
+    food.y*CELL + CELL/2,
+    CELL*0.34 + pulse, 0, Math.PI*2
+  );
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Snake body
+  for (let i = snake.length-1; i >= 0; i--) {
+    const {x,y} = snake[i];
+    const t      = i / snake.length;
+    const pad    = i === 0 ? 1 : 2;
+    const size   = CELL - pad*2;
+
+    if (i === 0) {
+      // Head — white with glow
+      ctx.shadowBlur  = 14;
+      ctx.shadowColor = C_SNAKE;
+      ctx.fillStyle   = C_HEAD;
+    } else {
+      ctx.shadowBlur = 0;
+      // Fade tail
+      ctx.fillStyle = C_SNAKE;
+      ctx.globalAlpha = 0.35 + 0.65 * (1 - t);
+    }
+    ctx.fillRect(x*CELL + pad, y*CELL + pad, size, size);
+  }
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur  = 0;
+
+  // Eyes on head (direction-aware)
+  drawEyes(snake[0]);
+}
+
+function drawEyes(h) {
+  const cx = h.x*CELL + CELL/2;
+  const cy = h.y*CELL + CELL/2;
+  const eyeOff  = 4;
+  const eyeSize = 2;
+  const pupilOff = 1.5;
+
+  let e1, e2, pd;
+  if      (dir.x === 1)  { e1={x:cx+pupilOff,y:cy-eyeOff}; e2={x:cx+pupilOff,y:cy+eyeOff}; pd={x:1,y:0}; }
+  else if (dir.x === -1) { e1={x:cx-pupilOff,y:cy-eyeOff}; e2={x:cx-pupilOff,y:cy+eyeOff}; pd={x:-1,y:0}; }
+  else if (dir.y === -1) { e1={x:cx-eyeOff,y:cy-pupilOff}; e2={x:cx+eyeOff,y:cy-pupilOff}; pd={x:0,y:-1}; }
+  else                    { e1={x:cx-eyeOff,y:cy+pupilOff}; e2={x:cx+eyeOff,y:cy+pupilOff}; pd={x:0,y:1}; }
+
+  ctx.fillStyle = '#0d1117';
+  [e1, e2].forEach(e => {
+    ctx.beginPath(); ctx.arc(e.x, e.y, eyeSize, 0, Math.PI*2); ctx.fill();
+  });
+}
+
+// Animation loop — keeps food pulsing even when paused
+let rafId;
+function renderLoop() {
+  draw();
+  rafId = requestAnimationFrame(renderLoop);
+}
+
+// ── GAME LOGIC ──────────────────────────────────────────────────────────
+function tick() {
+  if (!running || paused) return;
+  dir = {...nextDir};
+  const head = {x: snake[0].x + dir.x, y: snake[0].y + dir.y};
+
+  // Wall
+  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) { gameOver(); return; }
+  // Self
+  if (snake.some(s => s.x === head.x && s.y === head.y)) { gameOver(); return; }
+
+  snake.unshift(head);
+
+  if (head.x === food.x && head.y === food.y) {
+    score += 10 * level;
+    if (score > best) { best = score; localStorage.setItem('ba_best', best); }
+    level = Math.floor(snake.length / 6) + 1;
+    food  = placeFood();
+  } else {
+    snake.pop();
+  }
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById('disp-score').textContent = pad(score  || 0);
+  document.getElementById('disp-best').textContent  = pad(best   || 0);
+  document.getElementById('disp-level').textContent = level || 1;
+}
+function pad(n) { return String(n).padStart(3,'0'); }
+
+function startGame() {
+  clearInterval(loopHandle);
+  setOverlay(null);
+  initState();
+  loopHandle = setInterval(tick, SPEEDS[speedIdx]);
+}
+
+function gameOver() {
+  running = false;
+  clearInterval(loopHandle);
+  document.getElementById('go-score-val').textContent = score;
+  document.getElementById('modal-score-big').textContent = pad(score);
+  setOverlay('gameover');
+}
+
+function togglePause() {
+  if (!running) return;
+  paused = !paused;
+  setOverlay(paused ? 'pause' : null);
+}
+
+function setOverlay(id) {
+  ['ov-start','ov-pause','ov-gameover'].forEach(x => {
+    document.getElementById(x).classList.toggle('active', x === ('ov-'+id));
+  });
+}
+
+function setSpeed(idx, btn) {
+  speedIdx = idx;
+  document.querySelectorAll('.spd').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  if (running) { clearInterval(loopHandle); loopHandle = setInterval(tick, SPEEDS[speedIdx]); }
+}
+
+// ── CONTROLS ────────────────────────────────────────────────────────────
+const DIRS = {
+  ArrowUp:{x:0,y:-1}, w:{x:0,y:-1}, W:{x:0,y:-1},
+  ArrowDown:{x:0,y:1}, s:{x:0,y:1}, S:{x:0,y:1},
+  ArrowLeft:{x:-1,y:0}, a:{x:-1,y:0}, A:{x:-1,y:0},
+  ArrowRight:{x:1,y:0}, d:{x:1,y:0}, D:{x:1,y:0},
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'p' || e.key === 'P') { togglePause(); return; }
+  const d = DIRS[e.key];
+  if (d && (d.x !== -dir.x || d.y !== -dir.y)) { nextDir = d; e.preventDefault(); }
+});
+
+// ── SUBMIT SCORE → EC2 → SQS → Lambda → RDS ─────────────────────────────
+function openModal() {
+  document.getElementById('modal-score-big').textContent = pad(score);
+  document.getElementById('player-name').value = '';
+  document.getElementById('modal-fb').textContent = '';
+  document.getElementById('modal-fb').className = 'modal-feedback';
+  document.getElementById('modal-backdrop').classList.add('open');
+  setTimeout(() => document.getElementById('player-name').focus(), 80);
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+async function submitScore() {
+  const name = document.getElementById('player-name').value.trim();
+  const fb   = document.getElementById('modal-fb');
+  if (!name)    { fb.className='modal-feedback err'; fb.textContent='Enter a name to continue.'; return; }
+  if (!score)   { fb.className='modal-feedback err'; fb.textContent='Score is 0 — play first!';  return; }
+
+  fb.className = 'modal-feedback';
+  fb.textContent = 'Submitting...';
+
+  const payload = { username: name, score, level, timestamp: Date.now() };
+
+  try {
+    // ── REAL CALL — uncomment once EC2 backend is deployed ──
+    // const res  = await fetch(API_BASE + SCORE_PATH, {
+    //   method: 'POST',
+    //   headers: {'Content-Type':'application/json'},
+    //   body: JSON.stringify(payload)
+    // });
+    // if (!res.ok) { const e = await res.json(); throw new Error(e.error || 'Server error'); }
+
+    // ── DEMO MODE (remove after deploy) ──
+    await new Promise(r => setTimeout(r, 700));
+    if (score > 9999) throw new Error('Score rejected by validator');
+
+    fb.textContent = '✓ Score submitted!';
+    addToLeaderboard(name, score);
+    setTimeout(closeModal, 1400);
+
+  } catch(err) {
+    fb.className  = 'modal-feedback err';
+    fb.textContent = err.message;
+  }
+}
+
+// ── LEADERBOARD ─────────────────────────────────────────────────────────
+let lbData = [
+  {username:'ACE_PLAYER', score:2450},
+  {username:'SNAKE_KING',  score:1980},
+  {username:'BYTEWRANGL',  score:1530},
+  {username:'GRID_GHOST',  score:1290},
+  {username:'LAMBDA_LAD',  score: 870},
+  {username:'NEON_RUNNER', score: 640},
+  {username:'CAPSTONE_G',  score: 420},
+];
+
+function renderLB() {
+  const body = document.getElementById('lb-body');
+  if (!lbData.length) {
+    body.innerHTML = '<div class="lb-empty">No scores yet.<br>Be the first!</div>';
+    return;
+  }
+
+  const rankCls = r => r===1?'r1':r===2?'r2':r===3?'r3':'rN';
+  body.innerHTML = lbData.slice(0,10).map((row, i) => `
+    <div class="lb-row ${row._new ? 'new-entry' : ''}">
+      <span class="lb-rank ${rankCls(i+1)}">#${i+1}</span>
+      <span class="lb-name">${esc(row.username)}</span>
+      ${row._new ? '<span class="lb-new-badge">NEW</span>' : ''}
+      <span class="lb-score">${String(row.score).padStart(4,'0')}</span>
+    </div>
+  `).join('');
+}
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function addToLeaderboard(name, s) {
+  lbData = lbData.filter(r => r.username !== name.toUpperCase());
+  lbData.push({username: name.toUpperCase().slice(0,12), score: s, _new: true});
+  lbData.sort((a,b) => b.score - a.score);
+  lbData = lbData.slice(0,10);
+  renderLB();
+}
+
+async function fetchLeaderboard() {
+  // ── REAL CALL ──
+  // try {
+  //   const res  = await fetch(API_BASE + LB_PATH);
+  //   const data = await res.json();
+  //   lbData = data.rows || [];
+  // } catch(e) { /* fall through to seed data */ }
+  renderLB();
+}
+
+fetchLeaderboard();
+
+// ── KICK OFF RENDER LOOP ─────────────────────────────────────────────────
+renderLoop();
+</script>
+
+</body>
+</html>
