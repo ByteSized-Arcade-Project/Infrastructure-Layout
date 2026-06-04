@@ -1,0 +1,64 @@
+-- DynamoDB table definition (run via AWS CLI or CloudFormation)
+-- This replaces the MySQL schema from the original design.
+-- DynamoDB has no SQL schema — structure is defined at creation time only.
+
+-- ── Create the table ──────────────────────────────────────────────────────────
+-- Run this once via AWS CLI after logging in:
+--
+-- aws dynamodb create-table \
+--   --table-name arcade_scores \
+--   --attribute-definitions \
+--     AttributeName=username,AttributeType=S \
+--     AttributeName=timestamp,AttributeType=N \
+--   --key-schema \
+--     AttributeName=username,KeyType=HASH \
+--     AttributeName=timestamp,KeyType=RANGE \
+--   --billing-mode PAY_PER_REQUEST \
+--   --region us-east-1
+--
+-- PAY_PER_REQUEST billing = no provisioned WCU/RCU to manage.
+-- Within the free tier limit of 200M requests/month this costs $0.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- ── Item structure (what Lambda writes) ──────────────────────────────────────
+-- {
+--   "username":  "Alice",         (String — partition key)
+--   "timestamp": 1700000000,      (Number — sort key, Unix epoch seconds)
+--   "score":     250,             (Number)
+--   "level":     2                (Number)
+-- }
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- ── Seed data (AWS CLI one-liners for demo) ───────────────────────────────────
+-- aws dynamodb put-item --table-name arcade_scores --item \
+--   '{"username":{"S":"ACE_PLAYER"},"timestamp":{"N":"1700000001"},"score":{"N":"2450"},"level":{"N":"5"}}' \
+--   --region us-east-1
+--
+-- aws dynamodb put-item --table-name arcade_scores --item \
+--   '{"username":{"S":"SNAKE_KING"},"timestamp":{"N":"1700000002"},"score":{"N":"1980"},"level":{"N":"4"}}' \
+--   --region us-east-1
+--
+-- aws dynamodb put-item --table-name arcade_scores --item \
+--   '{"username":{"S":"BYTEWRANGL"},"timestamp":{"N":"1700000003"},"score":{"N":"1530"},"level":{"N":"4"}}' \
+--   --region us-east-1
+--
+-- aws dynamodb put-item --table-name arcade_scores --item \
+--   '{"username":{"S":"GRID_GHOST"},"timestamp":{"N":"1700000004"},"score":{"N":"1290"},"level":{"N":"3"}}' \
+--   --region us-east-1
+--
+-- aws dynamodb put-item --table-name arcade_scores --item \
+--   '{"username":{"S":"LAMBDA_LAD"},"timestamp":{"N":"1700000005"},"score":{"N":"870"},"level":{"N":"2"}}' \
+--   --region us-east-1
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- ── VPC Gateway Endpoint (run once — eliminates NAT Gateway cost) ─────────────
+-- aws ec2 create-vpc-endpoint \
+--   --vpc-id vpc-XXXXXXXX \
+--   --service-name com.amazonaws.us-east-1.dynamodb \
+--   --route-table-ids rtb-XXXXXXXX \
+--   --vpc-endpoint-type Gateway \
+--   --region us-east-1
+--
+-- This single command lets Lambda reach DynamoDB from the private subnet
+-- without a NAT Gateway, saving ~$33/month.
+-- ─────────────────────────────────────────────────────────────────────────────
