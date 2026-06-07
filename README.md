@@ -6,8 +6,7 @@ A production-grade, cost-optimized, and secure AWS cloud architecture built for 
 
 ## 🏗️ Architecture Diagram
 
-![AWS Capstone Architecture Diagram](https://placehold.co/800x450/0d1117/00e5ff?text=ByteSized+Arcade+3-Tier+Architecture+Diagram)
-*Replace this placeholder with your exported draw.io or Lucidchart PNG/JPEG URL.*
+![AWS Capstone Architecture Diagram](docs/architecture-diagram.png)
 
 ### 🔄 The End-to-End Data Flow
 1. **The Client Edge:** Players connect securely via the public URL of an internet-facing **Application Load Balancer (ALB)**.
