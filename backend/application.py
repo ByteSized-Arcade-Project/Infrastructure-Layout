@@ -18,8 +18,9 @@ log = logging.getLogger(__name__)
 
 # ── Unified Configuration ─────────────────────────────────────────────────────
 AWS_REGION    = "us-east-1"
-DYNAMO_TABLE  = "arcade_scores"
-SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/YOUR_ACCOUNT_ID/ByteSizedScoreQueue"
+DYNAMO_TABLE  = "GP4_arcade_scores"
+# Change when deployed to EC2
+SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/YOUR_ACCOUNT_ID/GP4ByteSizedScoreQueue"
 
 # ── AWS Clients (Using EC2 IAM Instance Profile) ──────────────────────────────
 sqs      = boto3.client("sqs",      region_name=AWS_REGION)
