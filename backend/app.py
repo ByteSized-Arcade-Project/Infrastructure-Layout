@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 AWS_REGION    = "us-east-1"
 DYNAMO_TABLE  = "GP4_arcade_scores"
 # Change when deployed to EC2
-SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/YOUR_ACCOUNT_ID/GP4ByteSizedScoreQueue"
+SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/337763382699/GP4ByteSizedScoreQueue"
 
 # ── AWS Clients (Using EC2 IAM Instance Profile) ──────────────────────────────
 sqs      = boto3.client("sqs",      region_name=AWS_REGION)
@@ -107,7 +107,7 @@ def get_leaderboard():
 
 @app.route("/")
 def index():
-    return send_from_directory("static", "bytesized_arcade.html")
+    return send_from_directory("static", "snakeGame.html")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
