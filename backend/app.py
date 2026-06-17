@@ -19,15 +19,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 # ── Unified Configuration ─────────────────────────────────────────────────────
-AWS_REGION    = "us-east-1"
-DYNAMO_TABLE  = "GP4_arcade_scores"
-# Change when deployed to EC2
+AWS_REGION = "us-east-1"
+DYNAMO_TABLE = "GP4_arcade_scores"
 SQS_QUEUE_URL = "https://sqs.us-east-1.amazonaws.com/337763382699/GP4ByteSizedScoreQueue"
 
 # ── AWS Clients (Using EC2 IAM Instance Profile) ──────────────────────────────
-sqs      = boto3.client("sqs",      region_name=AWS_REGION)
+sqs = boto3.client("sqs", region_name=AWS_REGION)
 dynamodb = boto3.resource("dynamodb", region_name=AWS_REGION)
-table    = dynamodb.Table(DYNAMO_TABLE)
+table = dynamodb.Table(DYNAMO_TABLE)
 
 @app.route("/health")
 def health():
@@ -41,10 +40,12 @@ def post_score():
     if not data:
         return jsonify({"error": "Invalid JSON body"}), 400
 
-    username  = str(data.get("username", "")).strip()[:12]
-    score     = data.get("score")
-    level     = data.get("level", 1)
-    timestamp = data.get("timestamp", int(time.time() * 1000))
+    username = str(data.get("username", "")).strip()[:12]
+    score = data.get("score")
+    level = data.get("level", 1)
+    
+    # Defensive handling for missing or null timestamp fields
+    raw_timestamp = data.get("timestamp") or int(time.time() * 1000)
 
     if not username:
         return jsonify({"error": "Username is required"}), 400
@@ -54,10 +55,10 @@ def post_score():
         return jsonify({"error": "Score out of range"}), 400
 
     message = {
-        "username":  username,
-        "score":     score,
-        "level":     int(level),
-        "timestamp": int(timestamp // 1000) # Lambda expects Unix epoch seconds
+        "username": username,
+        "score": score,
+        "level": int(level),
+        "timestamp": int(raw_timestamp // 1000) # Lambda expects Unix epoch seconds
     }
 
     try:
