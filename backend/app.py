@@ -8,11 +8,13 @@ the leaderboard directly from DynamoDB using the EC2 Instance IAM Role.
 import json
 import time
 import logging
+import os
 from flask import Flask, request, jsonify, send_from_directory
 import boto3
 from collections import defaultdict
 
-app = Flask(__name__, static_folder='static')
+# Tell Flask that the static folder is up one level and inside 'frontend'
+app = Flask(__name__, static_folder='../frontend', static_url_path='')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 log = logging.getLogger(__name__)
 
@@ -105,9 +107,10 @@ def get_leaderboard():
         log.error("Leaderboard scan failed: %s", exc)
         return jsonify({"error": "Could not fetch leaderboard"}), 500
 
-@app.route("/")
-def index():
-    return send_from_directory("static", "snakeGame.html")
+@app.route('/')
+def home():
+    # Serves snakeGame.html directly when someone hits the root URL
+    return send_from_directory(app.static_folder, 'snakeGame.html')
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
