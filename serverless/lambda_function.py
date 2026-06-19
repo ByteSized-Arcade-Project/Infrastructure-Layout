@@ -96,7 +96,7 @@ def save_score(msg: dict):
 
 
 # ── Handler ───────────────────────────────────────────────────────────────────
-def handler(event, context):
+def lambda_handler(event, context):
     """
     SQS event. Each record body is a JSON string from EC2's enqueue call.
     Returns batchItemFailures so SQS only retries transient errors,
