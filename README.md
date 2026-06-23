@@ -6,7 +6,7 @@ A production-grade, cost-optimized, and secure AWS cloud architecture built for 
 
 ## 🏗️ Architecture Diagram
 
-![AWS Capstone Architecture Diagram](docs/architecture-v2-secure.drawio.png)
+![AWS Capstone Architecture Diagram](docs/our-aws-architecture.png)
 
 ### 🔄 The End-to-End Data Flow
 1. **The Client Edge:** Players connect securely via the public URL of an internet-facing **Application Load Balancer (ALB)**.
