@@ -55,19 +55,3 @@ A production-grade, cost-optimized, and secure AWS cloud architecture built for 
 * Designed the operational fallback live demonstration and prepared the cloud metrics dashboard slides.
 
 ---
-
-## 🚀 How to Run & Replicate This Infrastructure
-
-### 1. Database & Queue Instantiation
-Execute via the AWS CLI to build your table and message queue frameworks:
-```bash
-# Spin up the DynamoDB persistence store
-aws dynamodb create-table \
-  --table-name arcade_scores \
-  --attribute-definitions AttributeName=username,AttributeType=S AttributeName=timestamp,AttributeType=N \
-  --key-schema AttributeName=username,KeyType=HASH AttributeName=timestamp,KeyType=RANGE \
-  --billing-mode PAY_PER_REQUEST \
-  --region us-east-1
-
-# Provision the asynchronous message buffer
-aws sqs create-queue --queue-name ByteSizedScoreQueue --region us-east-1
